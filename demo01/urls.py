@@ -28,6 +28,10 @@ urlpatterns = [
     path('changePassward/', views.changePassward),
     path('numQiandaoS/', views.numQiandaoS),
     path('lodeTeaCourseList/', views.lodeTeaCourseList),
+    path('lodeStuCourseList/', views.lodeStuCourseList),
+    path('lodeTeaCourseList/', views.lodeTeaCourseList),
+
+
     path('verIsCheck/', views.verIsCheck),
 
 

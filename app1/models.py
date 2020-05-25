@@ -33,7 +33,7 @@ class PostCheckIn(models.Model):
     post_id = models.CharField(primary_key=True, max_length=11)
     teacher_id = models.IntegerField(blank=True, null=True)
     post_date = models.CharField(max_length=255, blank=True, null=True)
-    post_num = models.IntegerField(blank=True, null=True)
+    post_num = models.IntegerField()
     course_id = models.IntegerField(blank=True, null=True)
     post_type = models.IntegerField(blank=True, null=True)
     post_longitude = models.CharField(max_length=255, blank=True, null=True)
@@ -59,7 +59,7 @@ class SignIn(models.Model):
     sign_id = models.IntegerField(primary_key=True)
     student_id = models.IntegerField(blank=True, null=True)
     post_type = models.IntegerField(blank=True, null=True)
-    post_num = models.IntegerField(blank=True, null=True)
+    post_num = models.IntegerField()
     post_id = models.CharField(max_length=10, blank=True, null=True)
 
     class Meta:
@@ -92,6 +92,7 @@ class StudentCourse(models.Model):
     stu_course_id = models.IntegerField(primary_key=True)
     course = models.ForeignKey(Course, models.DO_NOTHING, blank=True, null=True)
     student = models.ForeignKey(Student, models.DO_NOTHING, blank=True, null=True)
+    stu_index = models.IntegerField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -119,3 +120,4 @@ class TeacherPostPic(models.Model):
     class Meta:
         managed = False
         db_table = 'teacher_post_pic'
+

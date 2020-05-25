@@ -26,8 +26,7 @@ SECRET_KEY = 'kpk_+xlfj7)ol1-m0oc_k-l$q+wq@r5ath(w023x&4zc^4p*1#'
 DEBUG = True
 
 ALLOWED_HOSTS = ['10.34.15.176',
-                 '127.0.0.1',
-                 'localhost']
+                 '127.0.0.1',]
 
 
 # Application definition
@@ -39,8 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'app1',
+    # 'werkzeug_debugger_runserver',
+    # 'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -72,7 +72,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'demo01.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
