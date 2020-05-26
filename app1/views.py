@@ -129,6 +129,7 @@ def savePictures(request):
     fname = request.POST.get('file_name_InSFolder')  # 文件在指定文件夹中的名字
     studentId = request.POST.get('studentId')  #识别时哪一个学生
      # 保存照片到指定文件夹下
+    print(11111)
     try:
         image=request.FILES.get('file')
 
@@ -618,51 +619,87 @@ def teaPostNumCheck(request):
     data = {"RESULT": -1}
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
-
-
-
-
-
 def demotest(request):
     postId="123"
     sql = "select post_id , post_date, post_num , post_longitude , post_latitude " \
           "from  post_check_in  where  post_num in( select max(post_num) from post_check_in where post_id = " + postId +")"
     print(sql)
 
-    studentId = request.GET.get('studentId')
+    fpath = request.POST.get('file_save_path_InServer')  # 至指定到文件夹
+    fname = request.POST.get('file_name_InSFolder')  # 文件在指定文件夹中的名字
+    studentId = request.POST.get('studentId')  # 识别时哪一个学生
+    # 保存照片到指定文件夹下
+    try:
+        image = request.FILES.get('file')
 
-    print(studentId)
-    course_id = []
-    course_name = []
-    teacher_id = []
-    teacher_name = []
+        # 方案一
+        # if image.size>1000 and image.size<20480000:
+        #     path=default_storage.save(file_save_path_InServer+image.name,ContentFile(image.read()))
+        #     destination =os.path.join(settings.MEDIA_ROOT,path)
+        # else:
+        #     print("no")
 
-    # 查询所选课程的所有id
-    res0 = models.StudentCourse.objects.filter(student_id=studentId)
-    for r in res0:
-        course_id.append(r.course_id)
+        # 方案二
+        # destination = open(os.path.join("E:\\upload", myFile.name), 'wb+')  # 打开特定的文件进行二进制的写操作
 
-    # 根据id 获取老师名称和课程名
-    for i in course_id:
-        res1 = models.Course.objects.filter(course_id=i)
-        for c in res1:
-            course_name.append(c.course_name)
-            teacher_id.append(c.teacher_id)
+        destination = open(os.path.join(fpath, fname), 'wb+')  # 打开特定的文件进行二进制的写操作
+        for chunk in image.chunks():  # 分块写入文件
+            destination.write(chunk)
+        destination.close()
+    except:
+        data = {"RESULT": -1}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
-    # 根据teacher_id 查询teacher_name
-    for t in teacher_id:
-        res1 = models.Teacher.objects.filter(teacher_id=t)
-        for l in res1:
-            teacher_name.append(l.teacher_name)
+    # 查询获取学生的index
+    studentIndex = -1
+    res = models.Student.objects.filter(student_id=studentId)
+    for s in res:
+        studentIndex = s.student_id
 
-    len_c = len(course_id)
-    data = []
-    j = 0
-    while j < len_c:
-        data.append({"course_id": course_id[j], "course_name": course_name[j], "teacher_name": teacher_name[j]})
-        j += 1
+    print(studentIndex)
+    # 上传成功后进行 班级树的重新构建
+    # TODO addStudent(fpath, fname, studentIndex)
 
+    data = {"RESULT": 1}
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+
+
+
+    # studentId = request.GET.get('studentId')
+    #
+    # print(studentId)
+    # course_id = []
+    # course_name = []
+    # teacher_id = []
+    # teacher_name = []
+    #
+    # # 查询所选课程的所有id
+    # res0 = models.StudentCourse.objects.filter(student_id=studentId)
+    # for r in res0:
+    #     course_id.append(r.course_id)
+    #
+    # # 根据id 获取老师名称和课程名
+    # for i in course_id:
+    #     res1 = models.Course.objects.filter(course_id=i)
+    #     for c in res1:
+    #         course_name.append(c.course_name)
+    #         teacher_id.append(c.teacher_id)
+    #
+    # # 根据teacher_id 查询teacher_name
+    # for t in teacher_id:
+    #     res1 = models.Teacher.objects.filter(teacher_id=t)
+    #     for l in res1:
+    #         teacher_name.append(l.teacher_name)
+    #
+    # len_c = len(course_id)
+    # data = []
+    # j = 0
+    # while j < len_c:
+    #     data.append({"course_id": course_id[j], "course_name": course_name[j], "teacher_name": teacher_name[j]})
+    #     j += 1
+    #
+    # return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
 
     #     res1 = models.StudentCourse.objects.all()
