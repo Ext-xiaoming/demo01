@@ -18,8 +18,6 @@ from demo01 import settings
 def index(request):
     return  render(request,'hello.html')
 
-
-
 #教师端点击上传照片 开始发布新的人脸识别签到
 def postIfaceCheck(request):
 
@@ -124,7 +122,6 @@ def postIfaceCheck(request):
 
 
     return HttpResponse("ok")
-
 
 #学生端上传个人照片
 def savePictures(request):
@@ -278,7 +275,6 @@ def changePassward(request):
     data = {"RESULT": 0 } # 1表示完成功能没有错误
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
-
 #加载教师端课程列表
 def lodeTeaCourseList(request):
     teacherId = request.POST.get('teacherId')
@@ -308,10 +304,11 @@ def lodeTeaCourseList(request):
 
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
-
 #加载学生端课程列表
 def lodeStuCourseList(request):
     studentId = request.POST.get('studentId')
+
+    print(studentId)
     course_id=[]
     course_name = []
     teacher_id = []
@@ -345,7 +342,6 @@ def lodeStuCourseList(request):
         j+=1
 
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
-
 
 # 验证是否已经签到
 def verIsCheck(request):
@@ -394,7 +390,6 @@ def verIsCheck(request):
     data = {"RESULT": 0, "post_longitude": -1, "post_latitude": -1, "post_num": -1, "post_date": -1, "post_id": -1}
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
-
 #学生端进行数字签到
 def numQiandaoS(request):
     post_id = request.POST.get('post_id')
@@ -421,6 +416,210 @@ def numQiandaoS(request):
     data = {"RESULT": 1}
     return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
+#学生考勤的签到列表，显示学生哪一次签到哪一次没有
+def stuKaoQinList(request):
+    courseId = request.POST.get('courseId')
+
+    post_id = []
+    post_num = []
+    post_date = []
+    IsCheck = []
+
+    # 查询course_id 对应的所有签到记录 按照post_num排序
+    res0 = models.PostCheckIn.objects.filter(course_id=courseId).order_by("-post_num")
+    for r in res0:
+        post_id.append(r.post_id)
+        post_num.append(r.post_num)
+        post_date.append(r.post_date)
+
+    # 根据post_id 判断是否签到了
+    for i in post_id:
+        res1 = models.SignIn.objects.filter(post_id=i)
+        if res1.exists():
+            IsCheck.append("出勤")
+        else:
+            IsCheck.append("缺勤")
+
+    len_c = len(post_id)
+    data = []
+    j = 0
+    while j < len_c:
+        data.append({"post_num": post_num[j], "post_date": post_date[j], "IsCheck": IsCheck[j]})
+        j += 1
+
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+#这个课号所有的签到发布情况
+def teaCourseFabu(request):
+    courseId = request.POST.get('courseId')
+
+    post_id = []
+    post_num = []
+    post_date = []
+    num = []
+
+    # 查询course_id 对应的所有签到记录 按照post_num排序
+    res0 = models.PostCheckIn.objects.filter(course_id=courseId).order_by("-post_num")
+    for r in res0:
+        post_id.append(r.post_id)
+        post_num.append(r.post_num)
+        post_date.append(r.post_date)
+
+    # 根据post_id 判断是否签到了
+    for i in post_id:
+        res1 = models.SignIn.objects.filter(post_id=i)
+        if res1.exists():
+            # 如果存在就遍历统计人数
+            num.append(res1.count())
+        else:
+            num.append(0)
+
+    len_c = len(post_id)
+    data = []
+    j = 0
+    while j < len_c:
+        data.append({"post_num": post_num[j], "post_date": post_date[j], "num": num[j], "post_id": post_id[j]})
+        j += 1
+
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+#该次签到中谁签了
+def whoQiandao(request):
+    courseId = request.POST.get('courseId')
+    postId = request.POST.get('postId')
+
+    student_id = []
+    student_name = []
+    CheckStatu = []
+    num = []
+
+    # 通过course_id 在SC表中找到该课程所有的学生（student_id）
+    res0 = models.StudentCourse.objects.filter(course_id=courseId)
+    for r0 in res0:
+        student_id.append(r0.student_id)
+
+    # 由student_id 在 student 中找到姓名
+    for si in student_id:
+        res1 = models.Student.objects.filter(student_id=si)
+        for r1 in res1:
+            student_name.append(r1.student_name)
+
+    # 由post_id、 student_id 在 sign_in 中查询有则出勤否则反之
+    len_c = len(student_id)  # 班级选课总人数
+    i = 0
+    while i < len_c:  # 进行n 次查询
+        res2 = models.SignIn.objects.filter(Q(student_id=student_id[i]) & Q(post_id=postId))
+        if res2.exists():
+            CheckStatu.append("出勤")
+        else:
+            CheckStatu.append("缺勤")
+        i += 1
+
+    data = []
+    j = 0
+    while j < len_c:
+        data.append({"student_id": student_id[j], "student_name": student_name[j], "CheckStatu": CheckStatu[j]})
+        j += 1
+
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+#教师发布课程
+def teaPostCourse(request):
+    courseId = request.POST.get('courseId')
+    courseName = request.POST.get('courseName')
+    teacherId = request.POST.get('teacherId')
+
+    # 检验courseId是否存在 存在返回0 不存在则插入成功返回1
+    res0 = models.Course.objects.filter(course_id=courseId)
+    if res0.exists():
+        data = {"RESULT": 0}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+    else:
+        opreateAdd = models.Course(teacher_id=teacherId, course_id=courseId, course_name=courseName)
+        opreateAdd.save()
+        print("over!")
+        data = {"RESULT": 1}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+    data = {"RESULT": -1}
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+
+#学生添加课程
+def stuAddCourse(request):
+    courseId = request.POST.get('courseId')
+    studentId = request.POST.get('studentId')
+
+    # 检验courseId是否存在 存在返回0 不存在则插入成功返回1
+    res0 = models.StudentCourse.objects.filter(course_id=courseId)
+    if res0.exists():
+        data = {"RESULT": 0}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+    else:
+        # 查询最大的stu_course_id 以及
+        res1 = models.StudentCourse.objects.all()
+        if res1.exists():
+            stu_course_id = int(res1.aggregate(Max('stu_course_id')).get('stu_course_id__max')) + 1
+        else:
+            stu_course_id = 1
+
+        # 查询学号对应的index
+        res2 = models.Student.objects.filter(student_id=studentId)
+        if res2.exists():
+            for r in res2:
+                stu_index = r.stu_index
+            #插入操作
+            opreateAdd = models.StudentCourse(stu_course_id=stu_course_id, course_id=courseId, student_id=studentId,
+                                              stu_index=stu_index)
+            opreateAdd.save()
+            data = {"RESULT": 1}
+            return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+        else:
+            data = {"RESULT": -1}
+            return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+    data = {"RESULT": -1}
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+#教师发布数字签到
+def teaPostNumCheck(request):
+    post_id = request.POST.get('post_id')
+    post_date = request.POST.get('post_date')
+    course_id = request.POST.get('course_id')
+    post_longitude = request.POST.get('post_longitude')
+    post_latitude = request.POST.get('post_latitude')
+
+
+    #查询是否已经存在该条记录
+    res2 = models.PostCheckIn.objects.filter(post_id=post_id)
+    if res2.exists():
+        data = {"RESULT": 0}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+    # 由course_id 查询 post_num
+    res1 = models.PostCheckIn.objects.filter(course_id=course_id)
+    if res1.exists():
+        post_num = int(res1.aggregate(Max('post_num')).get('post_num__max')) + 1
+    else:
+        post_num = 1
+
+    # 有course_id 查询teacher_id
+    res0 = models.Course.objects.filter(course_id=course_id)
+    if res0.exists():
+        for r in res0:
+            teacher_id = r.teacher_id
+        opreateAdd = models.PostCheckIn(post_id=post_id, post_date=post_date, course_id=course_id, post_num=post_num,
+                                    teacher_id=teacher_id, post_longitude=post_longitude, post_latitude=post_latitude)
+        opreateAdd.save()
+        print("over!")
+        data = {"RESULT": 1}
+        return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+    data = {"RESULT": -1}
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+
+
 
 
 
@@ -430,39 +629,99 @@ def demotest(request):
           "from  post_check_in  where  post_num in( select max(post_num) from post_check_in where post_id = " + postId +")"
     print(sql)
 
-
     studentId = request.GET.get('studentId')
-    course_id=[]
+
+    print(studentId)
+    course_id = []
     course_name = []
     teacher_id = []
     teacher_name = []
 
-    #查询所选课程的所有id
+    # 查询所选课程的所有id
     res0 = models.StudentCourse.objects.filter(student_id=studentId)
     for r in res0:
         course_id.append(r.course_id)
 
-
-    #根据id 获取老师名称和课程名
+    # 根据id 获取老师名称和课程名
     for i in course_id:
         res1 = models.Course.objects.filter(course_id=i)
         for c in res1:
             course_name.append(c.course_name)
             teacher_id.append(c.teacher_id)
 
-    #根据teacher_id 查询teacher_name
+    # 根据teacher_id 查询teacher_name
     for t in teacher_id:
         res1 = models.Teacher.objects.filter(teacher_id=t)
         for l in res1:
             teacher_name.append(l.teacher_name)
 
-
-    len_c=len(course_id)
+    len_c = len(course_id)
     data = []
-    j=0
-    while j<len_c:
-        data.append( {"student_course.course_id": course_id[j], "course_name": course_name[j], "teacher_name": teacher_name[j]})
-        j+=1
+    j = 0
+    while j < len_c:
+        data.append({"course_id": course_id[j], "course_name": course_name[j], "teacher_name": teacher_name[j]})
+        j += 1
+
+    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+
+    #     res1 = models.StudentCourse.objects.all()
+    #     if res1.exists():
+    #         stu_course_id = int(res1.aggregate(Max('stu_course_id')).get('stu_course_id__max')) + 1
+    #     else:
+    #         stu_course_id =1
+    #
+    #     #查询学号对应的index
+    #     res2 = models.Student.objects.filter(student_id=studentId)
+    #     if res2.exists():
+    #         for r in res2:
+    #             stu_index=r.stu_index
+    #         opreateAdd = models.StudentCourse(stu_course_id=stu_course_id, course_id=courseId, student_id=studentId,stu_index=stu_index)
+    #         opreateAdd.save()
+    #
+    #     else:
+    #         data = {"RESULT": -1}
+    #         return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+    #
+    # data = {"RESULT": -1}
+    # return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
+
+
+    # student_id = []
+    # student_name=[]
+    # CheckStatu = []
+    # num = []
+    #
+    # #通过course_id 在SC表中找到该课程所有的学生（student_id）
+    # res0 = models.StudentCourse.objects.filter(course_id=courseId)
+    # for r0 in res0:
+    #     student_id.append(r0.student_id)
+    #
+    # #由student_id 在 student 中找到姓名
+    # for si in student_id:
+    #     res1 = models.Student.objects.filter(student_id=si)
+    #     for r1 in res1:
+    #         student_name.append(r1.student_name)
+    #
+    # #由post_id、 student_id 在 sign_in 中查询有则出勤否则反之
+    # len_c=len(student_id)#班级选课总人数
+    # i=0
+    # while i<len_c:      #进行n 次查询
+    #     res2 = models.SignIn.objects.filter(Q(student_id=student_id[i]) & Q(post_id=postId))
+    #     if res2.exists():
+    #         CheckStatu.append("出勤")
+    #     else:
+    #         CheckStatu.append("缺勤")
+    #     i+=1
+    #
+    #
+    # data = []
+    # j=0
+    # while j<len_c:
+    #     data.append( {"student_id": student_id[j], "student_name": student_name[j], "CheckStatu": CheckStatu[j]})
+    #     j+=1
+    #
+    # return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
 
     # # 查询教师姓名
     # teacher = models.Teacher.objects.filter(teacher_id=studentId)
@@ -485,10 +744,6 @@ def demotest(request):
     # while j < len_id:
     #     data.append({"course_name": course_name[j], "course_id": course_id[j], "teacher_name": teacher_name})
     #     j += 1
-
-
-    return HttpResponse(json.dumps(data, ensure_ascii=False), content_type="application/json,charset=utf-8")
-
 
     # return HttpResponse("ok")
 

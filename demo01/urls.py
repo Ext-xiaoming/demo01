@@ -29,10 +29,12 @@ urlpatterns = [
     path('numQiandaoS/', views.numQiandaoS),
     path('lodeTeaCourseList/', views.lodeTeaCourseList),
     path('lodeStuCourseList/', views.lodeStuCourseList),
-    path('lodeTeaCourseList/', views.lodeTeaCourseList),
-
-
+    path('stuKaoQinList/', views.stuKaoQinList),
+    path('whoQiandao/', views.whoQiandao),
+    path('teaCourseFabu/', views.teaCourseFabu),
+    path('teaPostCourse/', views.teaPostCourse),
+    path('stuAddCourse/', views.stuAddCourse),
+    path('teaPostNumCheck/', views.teaPostNumCheck),
     path('verIsCheck/', views.verIsCheck),
-
 
 ]
